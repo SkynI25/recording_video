@@ -22,7 +22,6 @@ stopElem.addEventListener("click", function(evt) {
 var recordedChunks = [];
 
 async function startCapture() {
-  let recorderStream = videoElem;
   try {
     const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
     videoElem.srcObject = stream;
