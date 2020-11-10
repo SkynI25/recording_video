@@ -6,9 +6,29 @@
     <title>Document</title>
 </head>
 <body>
-    <p><button id="start">Start Capture</button>&nbsp;<button id="stop">Stop Capture</button></p>
-    
-    <video id="video" autoplay></video>
+    <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        html, body {
+            margin: 0!important;
+            padding: 0!important;
+        }
+    </style>
+    <title>Video Recording | RecordRTC</title>
+</head>
+<body>
+    <h1>Simple Video Recording using RecordRTC</h1>
+    <br>
+    <h2 id="h1"></h2>
+    <button id="btn-start-recording">Start Recording</button>
+    <button id="btn-stop-recording" disabled>Stop Recording</button>
+    <hr>
+    <video controls autoplay playsinline width="400px" height="400px"></video>
     <script src="./index.js"></script>
+    <script src="./node_modules/recordrtc/RecordRTC.js"></script>
+    <script src="https://www.webrtc-experiment.com/common.js"></script>
 </body>
 </html>

@@ -1,66 +1,63 @@
-const videoElem = document.getElementById("video");
-const startElem = document.getElementById("start");
-const stopElem = document.getElementById("stop");
-
-// Options for getDisplayMedia()
-var displayMediaOptions = {
-  video: {
-    cursor: "always"
-  },
-  audio: true
+let video = document.querySelector('video');
+let h1 = document.querySelector('#h1');
+function captureCamera(callback) {
+    navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function(camera) {
+        callback(camera);
+    }).catch(function(error) {
+        alert('Unable to capture your camera. Please check console logs.');
+        console.error(error);
+    });
+}
+function stopRecordingCallback() {
+    video.src = video.srcObject = null;
+    video.muted = false;
+    video.volume = 1;
+    video.src = URL.createObjectURL(recorder.getBlob());
+    recorder.destroy();
+    recorder = null;
+}
+let recorder; // globally accessible
+let blobs = [];
+let speaker = new MediaStream();
+document.getElementById('btn-start-recording').onclick = function() {
+    this.disabled = true;
+    captureCamera(function(camera) {
+        navigator.mediaDevices.getDisplayMedia({video: {cursor: "always"}, audio: true}).then(stream => {
+            const ac = new AudioContext();
+            const audioTracks = [...camera.getAudioTracks(), 
+                                ...stream.getAudioTracks()];
+            const sources = audioTracks.map(t => ac.createMediaStreamSource(new MediaStream([t])));
+            const dest = ac.createMediaStreamDestination();
+            sources.forEach(s => s.connect(dest));
+            speaker = dest.stream;
+            speaker.addTrack(stream.getVideoTracks()[0].clone());
+            video.volume = 1;
+            video.srcObject = speaker;
+            recorder = RecordRTC(speaker, {
+                type: 'video/webm'
+            });
+            recorder = RecordRTC(speaker, {
+                type: 'video/webm',
+                timeSlice: 1000,
+                ondataavailable: function (blob) {
+                    blobs.push(blob);
+                    console.log(blob);
+                    console.log(URL.createObjectURL(blob));
+                    var size = 0;
+                    blobs.forEach(function (b) {
+                        size += b.size;
+                    });
+                    h1.innerHTML = 'Total blobs: ' + blobs.length + ' (Total size: ' + bytesToSize(size) + ')';
+                }
+            });
+            recorder.startRecording();
+            // release camera on stopRecording
+            recorder.speaker = speaker;
+            document.getElementById('btn-stop-recording').disabled = false;
+        });
+    });
 };
-
-// Set event listeners for the start and stop buttons
-startElem.addEventListener("click", function(evt) {
-  startCapture();
-}, false);
-
-stopElem.addEventListener("click", function(evt) {
-  stopCapture();
-}, false);
-
-var recordedChunks = [];
-
-async function startCapture() {
-  try {
-    const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
-    videoElem.srcObject = stream;
-    let recorder = new MediaRecorder(stream, {mimeType: "video/webm; codecs=vp9"});
-    recorder.ondataavailable = handleDataAvailable;
-    recorder.start();
-  } catch(err) {
-    console.error("Error: " + err);
-  }
-}
-
-function stopCapture(evt) {
-  let tracks = videoElem.srcObject.getTracks();
-
-  tracks.forEach(track => track.stop());
-  videoElem.srcObject = null;
-}
-    
-function handleDataAvailable(event) {
-  console.log("data-available");
-  if (event.data.size > 0) {  
-    recordedChunks.push(event.data);
-    console.log(recordedChunks);
-    download();
-  } else {
-    // ...
-  }
-}
-
-function download() {
-  var blob = new Blob(recordedChunks, {
-    type: "video/webm"
-  });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement("a");
-  document.body.appendChild(a);
-  a.style = "display: none";
-  a.href = url;
-  a.download = "test.webm";
-  a.click();
-  window.URL.revokeObjectURL(url);
-}
+document.getElementById('btn-stop-recording').onclick = function() {
+    this.disabled = true;
+    recorder.stopRecording(stopRecordingCallback);
+};
